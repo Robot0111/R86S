@@ -1,0 +1,51 @@
+services:
+  r86s-monitor-api:
+    image: luql11/r86s:1.0-SNAPSHOT
+    container_name: r86s-monitor-api
+    pull_policy: always
+    restart: unless-stopped
+
+    user: "0:0"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+    networks:
+      lan:
+        ipv4_address: 192.168.3.22
+
+    environment:
+      R86S_DB_URL: ${R86S_DB_URL:-}
+      R86S_DB_USER: ${R86S_DB_USER:-}
+      R86S_DB_PASSWORD: ${R86S_DB_PASSWORD:-}
+      R86S_IMPORT_SECONDS: ${R86S_IMPORT_SECONDS:-30}
+      R86S_DB_RETENTION_DAYS: ${R86S_DB_RETENTION_DAYS:-180}
+      R86S_PRUNE_LOCAL: ${R86S_PRUNE_LOCAL:-false}
+
+    volumes:
+      - type: bind
+        source: /fourT/openwrt-monitor/state
+        target: /monitor/state
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /fourT/openwrt-monitor/batches/sent
+        target: /monitor/batches/sent
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /fourT/openwrt-monitor/raw
+        target: /monitor/raw
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /fourT/openwrt-monitor/metrics
+        target: /monitor/metrics
+        bind:
+          create_host_path: false
+
+networks:
+  lan:
+    external: true
