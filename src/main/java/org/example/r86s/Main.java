@@ -19,7 +19,8 @@ public final class Main {
         AppConfig config = AppConfig.load(System.getenv());
         ObjectMapper json = new ObjectMapper().enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
         StatusReader status = new StatusReader(config.monitorDir().resolve("state"), json);
-        HistoryStore store = config.database() == null ? null : new HistoryStore(config.database(), config.hostId(), json);
+        HistoryStore store = config.database() == null ? null
+                : new HistoryStore(config.database(), config.hostId(), json, config.monitorDir().resolve("state"));
         MonitorApi api = new MonitorApi(json, status, store);
 
         HttpServer server = HttpServer.create(new InetSocketAddress(config.bindAddress(), config.port()), 0);

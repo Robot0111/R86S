@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 final class HistoryImporter {
@@ -97,6 +98,7 @@ final class HistoryImporter {
                 continue;
             }
             try {
+                long startedAt = System.nanoTime();
                 Path ack = config.monitorDir().resolve("state").resolve(id + ".ack.json");
                 String checksum = archives.awsChecksum(ack, id);
                 if (known != null && !known.equals(checksum)) {
@@ -104,14 +106,21 @@ final class HistoryImporter {
                 }
                 byte[] data = archives.verifiedBytes(file, checksum);
                 if (known == null) {
+                    long verifiedAt = System.nanoTime();
                     Batch batch = archives.read(data, id, checksum);
                     if (batch.sealedMs() < cutoff) {
                         continue;
                     }
+                    long parsedAt = System.nanoTime();
                     store.writeBatch(connection, batch);
+                    long committedAt = System.nanoTime();
                     importedThisPoll++;
-                    LOG.log(System.Logger.Level.INFO, "Imported AWS batch {0}: {1} events, {2} samples",
-                            id, batch.events().size(), batch.metrics().size());
+                    LOG.log(System.Logger.Level.INFO,
+                            "Imported AWS batch {0}: {1} events, {2} samples, verify {3} ms, parse {4} ms, Oracle {5} ms",
+                            id, batch.events().size(), batch.metrics().size(),
+                            TimeUnit.NANOSECONDS.toMillis(verifiedAt - startedAt),
+                            TimeUnit.NANOSECONDS.toMillis(parsedAt - verifiedAt),
+                            TimeUnit.NANOSECONDS.toMillis(committedAt - parsedAt));
                 }
                 if (config.pruneLocal()) {
                     Files.deleteIfExists(file);

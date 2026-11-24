@@ -27,10 +27,6 @@ final class HistoryData {
         long time = time(row.path("sampled_at"));
         JsonNode disk = row.path("disks");
         JsonNode network = row.path("network");
-        JsonNode conntrack = row.path("conntrack");
-        Double count = JsonValues.number(conntrack.path("count"));
-        Double max = JsonValues.number(conntrack.path("max"));
-        Double usage = count != null && max != null && max > 0 ? 100 * count / max : null;
         return new Metric(id, time, JsonValues.number(row.path("cpu_percent")),
                 JsonValues.number(row.path("iowait_percent")),
                 JsonValues.integer(row.path("memory").path("MemAvailable")),
@@ -38,7 +34,7 @@ final class HistoryData {
                 JsonValues.integer(disk.path("/overlay").path("free_bytes")),
                 JsonValues.integer(disk.path("/docker").path("free_bytes")),
                 JsonValues.integer(disk.path("/fourT").path("free_bytes")),
-                maxNumber(row.path("disk_io"), "await_ms"), usage,
+                maxNumber(row.path("disk_io"), "await_ms"), conntrackUsage(row.path("conntrack")),
                 JsonValues.bool(row.path("wan").path("up")),
                 linkUp(network.path("eth0")), linkUp(network.path("eth2")),
                 row.path("errors").isObject() && !row.path("errors").isEmpty(), row.toString());
@@ -76,7 +72,13 @@ final class HistoryData {
         return value.toEpochMilli();
     }
 
-    private static Double maxNumber(JsonNode values, String field) {
+    static Double conntrackUsage(JsonNode conntrack) {
+        Double count = JsonValues.number(conntrack.path("count"));
+        Double max = JsonValues.number(conntrack.path("max"));
+        return count != null && max != null && max > 0 ? 100 * count / max : null;
+    }
+
+    static Double maxNumber(JsonNode values, String field) {
         Double max = null;
         for (JsonNode value : values) {
             Double number = JsonValues.number(field == null ? value : value.path(field));
@@ -130,10 +132,11 @@ final class HistoryData {
                   Double cpuMaxPercent, Double ioWaitMaxPercent, Long memoryAvailableMinBytes,
                   Double temperatureMaxC, Long overlayFreeMinBytes, Long dockerFreeMinBytes,
                   Long archiveFreeMinBytes, Double diskAwaitMaxMs, Double conntrackMaxPercent,
-                  Integer wanDownSamples, Integer eth0DownSamples, Integer eth2DownSamples) {
+                  Integer wanDownSamples, Integer eth0DownSamples, Integer eth2DownSamples,
+                  Double load1Max, Long swapUsedMaxBytes, Long swapTotalMaxBytes) {
         static Window empty(long millis) {
             return new Window(iso(millis), 0, 0, null, null, null, null, null, null,
-                    null, null, null, null, null, null, null);
+                    null, null, null, null, null, null, null, null, null, null);
         }
     }
 }

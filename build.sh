@@ -1,7 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-## export DOCKER_USERNAME=luql11
-## export DOCKER_PASSWORD=
+
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 
 mode="${1:---push}"
